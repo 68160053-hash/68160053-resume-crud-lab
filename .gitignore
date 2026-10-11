@@ -1,2 +1,10 @@
 *.log
 .DS_Store
+
+# Secrets and local config: never commit these
+.env
+.env.*
+!.env.example
+secret/*
+!secret/config.example.php
+!secret/.htaccess
