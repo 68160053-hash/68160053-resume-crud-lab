@@ -44,7 +44,7 @@ mysqli_stmt_execute($stmt);
 
 - `main` = starter ของอาจารย์ที่เอา `.env` และ `secret/` ออกแล้ว
 - ทำงานบน branch `feature/complete-crud-sql` แล้วรวมกลับ `main`
-- commit แยกตามงาน: ความลับ/`.gitignore`, การตั้งค่า DB, INSERT, SELECT+UPDATE, DELETE, เอกสาร
+- commit แยกตามงาน: ความลับ/`.gitignore`, การตั้งค่า DB, INSERT, SELECT+UPDATE, DELETE, เก็บกวาด, ธีม UI, เอกสาร
 - **ไม่มีความลับใน Git**: `.gitignore` กัน `.env`, `.env.*` และ `secret/*` มีเฉพาะ `.env.example` กับ
   `secret/config.example.php` ที่เป็นค่าตัวอย่าง รหัสผ่านจริงอยู่ในไฟล์ `secret/config.php` บนเซิร์ฟเวอร์เท่านั้น
 
