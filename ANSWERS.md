@@ -53,3 +53,21 @@ mysqli_stmt_execute($stmt);
 - หน้า CRUD ยัง**ไม่มีระบบล็อกอิน** ตามที่ README ของอาจารย์ระบุว่าเป็นตัวอย่างในห้องเรียน
   ถ้านำขึ้นเว็บจริงต้องเพิ่มการยืนยันตัวตน/สิทธิ์ก่อน
 - ห้าม import `database/setup.sql` ลงฐานที่มีข้อมูลจริง เพราะมี `DROP TABLE` ของ `profile`, `education`, `skill`, `training`
+
+## Testing (screenshots)
+
+ทดสอบบน XAMPP (Apache + MariaDB) ที่ `http://localhost/resume_crud_lab/` ใช้ฐานฝึก `resume_lab`
+ที่ import จาก `database/setup.sql` (ไม่ใช่ฐานข้อมูลเรซูเม่จริง)
+
+| # | ขั้นตอน | ภาพ |
+|---|---|---|
+| 1 | รายการ skill เริ่มต้น (3 แถว) | ![list before](screenshots/01_skills_list_before.png) |
+| 2 | ฟอร์มเพิ่ม skill (มี CSRF token) | ![add form](screenshots/02_add_form.png) |
+| 3 | **INSERT**: เพิ่ม `Test Skill` แล้วแถวใหม่ขึ้นในตาราง | ![after insert](screenshots/03_after_insert.png) |
+| 4 | **SELECT**: หน้า Edit ดึงค่าเดิมของแถวมาใส่ฟอร์ม | ![edit form](screenshots/04_edit_form_before.png) |
+| 5 | **UPDATE**: เปลี่ยนระดับเป็น Advanced แล้วค่าใหม่ขึ้นในตาราง | ![after update](screenshots/05_after_update.png) |
+| 6 | หน้ายืนยันก่อน **DELETE** | ![delete confirm](screenshots/06_delete_confirm.png) |
+| 7 | **DELETE**: ลบแล้วแถวหายไป เหลือ 3 แถวเดิม | ![after delete](screenshots/07_after_delete.png) |
+| 8 | **Parameter binding**: ข้อความหน้าตาเหมือน SQL injection ถูกเก็บเป็นข้อความธรรมดา ตารางไม่ถูกลบ | ![binding demo](screenshots/08_parameter_binding_demo.png) |
+
+ผลตรวจเพิ่มเติม: ส่งฟอร์มโดยไม่มี CSRF token ได้ 403, id ที่ไม่มีอยู่ได้ 404, id ที่ไม่ถูกต้องได้ 400
