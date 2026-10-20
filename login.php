@@ -8,14 +8,24 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
  $password=(string)($_POST['password']??'');
  if (!filter_var($email,FILTER_VALIDATE_EMAIL) || $password==='') $error='Enter email and password.';
  else {
- // TODO 1: Query a single user by email using a prepared statement.
- // $sql = 'SELECT ... FROM users WHERE ... = ? LIMIT 1';
- // TODO 2: Use mysqli_stmt_bind_param / execute / bind_result / fetch.
- // TODO 3: Verify plaintext password with password_verify($password, $hash).
- // TODO 4: On success, session_regenerate_id(true) and set session values:
- // $_SESSION['user_id'], $_SESSION['profile_id'], $_SESSION['email'].
- // TODO 5: Redirect to skills.php and exit.
- $error='TODO: complete login authentication first.';
+ // Step 1: one user by email, prepared statement (the email is never concatenated into SQL).
+ $sql = 'SELECT id, profile_id, password_hash FROM users WHERE email = ? LIMIT 1';
+ // Step 2: bind, execute, read the matched row.
+ $stmt = mysqli_prepare($conn, $sql);
+ mysqli_stmt_bind_param($stmt, 's', $email);
+ mysqli_stmt_execute($stmt);
+ mysqli_stmt_bind_result($stmt, $userId, $profileId, $hash);
+ $found = mysqli_stmt_fetch($stmt);
+ mysqli_stmt_close($stmt);
+ // Step 3: compare with password_verify against the stored hash, never with ==.
+ if ($found && password_verify($password, $hash)) {
+  // Step 4: new session id (stops session fixation) and remember who logged in.
+  session_regenerate_id(true);
+  $_SESSION['user_id'] = $userId; $_SESSION['profile_id'] = $profileId; $_SESSION['email'] = $email;
+  // Step 5: go to the private page.
+  header('Location: skills.php'); exit;
+ }
+ $error = 'Invalid email or password.'; // same message for unknown email and wrong password
  }
 }
 ?>
