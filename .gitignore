@@ -8,3 +8,8 @@
 secret/*
 !secret/config.example.php
 !secret/.htaccess
+
+# editor / local config
+.vscode/
+.idea/
+config/db.local.php
