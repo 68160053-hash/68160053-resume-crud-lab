@@ -1,6 +1,7 @@
 <?php
 // Credentials come from (1) environment variables, (2) the git-ignored secret/config.php
 // on the server, or (3) local XAMPP defaults. Never hard-code real passwords here.
+mysqli_report(MYSQLI_REPORT_OFF); // PHP 8.1+ throws by default; the checks below expect false
 $secret = [];
 $secretFile = __DIR__ . '/../secret/config.php';
 if (is_file($secretFile)) { $secret = require $secretFile; }
