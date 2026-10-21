@@ -28,3 +28,9 @@ The CRUD pages use prepared statements, validation, output escaping, POST for ch
 INSERT 25, SELECT+UPDATE 30, DELETE 25, screenshots/testing 10, Git commits 10.
 
 **Starter:** fill all TODO SQL queries before submitting.
+
+## Week 3: PHP session login / logout
+
+Status: login (TODO 1-5) and logout (TODO 6) are completed; register, login, logout and the CRUD pages work together.
+Setup on an existing database: back it up, then run `database/this_week_migration.sql` (creates only `users`; do not re-run `setup.sql`).
+Explanation of the session flow and the test evidence (36 checks, screenshots in `screenshots/week3/`) are in `ANSWERS.md`.

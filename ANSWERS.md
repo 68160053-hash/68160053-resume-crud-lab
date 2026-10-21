@@ -71,3 +71,67 @@ mysqli_stmt_execute($stmt);
 | 8 | **Parameter binding**: ข้อความหน้าตาเหมือน SQL injection ถูกเก็บเป็นข้อความธรรมดา ตารางไม่ถูกลบ | ![binding demo](screenshots/08_parameter_binding_demo.png) |
 
 ผลตรวจเพิ่มเติม: ส่งฟอร์มโดยไม่มี CSRF token ได้ 403, id ที่ไม่มีอยู่ได้ 404, id ที่ไม่ถูกต้องได้ 400
+
+---
+
+# Week 3: PHP Session Login / Logout
+
+ต่อยอดจาก Resume CRUD Lab เดิม เพิ่มระบบสมัครสมาชิก ล็อกอิน ล็อกเอาต์ และบังคับล็อกอินก่อนเข้าหน้าเรซูเม่/CRUD
+
+## Session คืออะไร
+
+HTTP จำผู้ใช้ไม่ได้ (stateless) PHP จึงเก็บข้อมูลผู้ใช้ไว้ใน **session ฝั่งเซิร์ฟเวอร์** (`$_SESSION`)
+แล้วส่งให้เบราว์เซอร์แค่รหัส session ใน cookie `PHPSESSID` ทุกคำขอถัดไปเบราว์เซอร์ส่ง cookie นี้กลับมา
+PHP เอารหัสไปหา session ของคนนั้น ข้อมูลสำคัญ (`user_id`, `profile_id`) จึงอยู่บนเซิร์ฟเวอร์ ไม่ได้อยู่ในเบราว์เซอร์
+
+## Flow ล็อกอิน (`login.php`)
+
+1. ฟอร์ม POST พร้อม CSRF token (`auth_csrf`) ถ้าไม่มี token ได้ 403
+2. ตรวจรูปแบบอีเมล แล้ว `SELECT id, profile_id, password_hash FROM users WHERE email = ? LIMIT 1`
+   ด้วย prepared statement (ค่าอีเมลไม่ถูกต่อเข้า SQL จึงกัน SQL injection)
+3. `password_verify($password, $hash)` เทียบกับ hash ใน DB (ตอนสมัครเก็บด้วย `password_hash` เป็น bcrypt ไม่เก็บรหัสจริง)
+4. ถ้าถูก: `session_regenerate_id(true)` เปลี่ยนรหัส session ใหม่ (กัน session fixation) แล้วเก็บ `user_id`, `profile_id`, `email`
+5. redirect ไป `skills.php`
+6. ถ้าผิด: ตอบข้อความเดียวกันคือ "Invalid email or password." ทั้งกรณีอีเมลไม่มีและรหัสผิด ไม่บอกผู้โจมตีว่าอีเมลนี้มีอยู่หรือไม่
+
+## การป้องกันหน้าส่วนตัว
+
+`auth.php` มี `require_login()`: ถ้าไม่มี `$_SESSION['user_id']` จะ redirect ไป `login.php`
+`index.php` และ `crud_bootstrap.php` (ที่ทุกหน้า CRUD เรียกใช้) เรียกฟังก์ชันนี้ทุกครั้ง
+
+ข้อมูลของใครของมัน: `profile_id` มาจาก session ไม่ได้มาจากฟอร์ม และทุกคำสั่ง CRUD มี
+`WHERE id = ? AND profile_id = ?` ผู้ใช้คนหนึ่งจึงเห็น/แก้/ลบแถวของอีกคนไม่ได้ แม้จะเดา id ถูก
+
+## Flow ล็อกเอาต์ (`logout.php`)
+
+1. กดปุ่มยืนยัน (POST + CSRF token) การเปิดลิงก์เฉย ๆ ไม่ทำให้ล็อกเอาต์
+2. `$_SESSION = []` ล้างข้อมูล
+3. สั่ง cookie `PHPSESSID` หมดอายุ
+4. `session_destroy()` ทำลาย session บนเซิร์ฟเวอร์
+5. redirect ไป `login.php?logged_out=1`
+
+เพราะ session ถูกทำลายบนเซิร์ฟเวอร์ แม้เบราว์เซอร์ส่ง cookie เก่ากลับมา (กด Back / refresh) ก็เข้าหน้าส่วนตัวไม่ได้
+
+## ผลทดสอบ (36 ข้อผ่านทั้งหมด)
+
+ทดสอบบน XAMPP (Apache + MariaDB) ฐานฝึก `resume_lab` ด้วยสคริปต์ที่ส่งฟอร์มจริงพร้อม CSRF token
+แล้วตรวจผลจากการตอบกลับของ Apache และจากตารางใน MySQL โดยตรง ภาพเป็นหน้าเว็บที่เซิร์ฟเวอร์ตอบกลับจริง
+
+| กรณีทดสอบใน README | ผล | ภาพ |
+|---|---|---|
+| 1. ไม่ล็อกอินแล้วเปิด `skills.php`, `index.php`, create/edit/delete | redirect ไป `login.php` ทุกหน้า | ![redirect](screenshots/week3/09_skills_redirects_to_login.png) |
+| 2. สมัครสมาชิก (รหัสผ่านสั้นกว่า 10 ตัว/อีเมลซ้ำถูกปฏิเสธ) | สมัครได้ รหัสผ่านเก็บเป็น bcrypt (`$2y$`, 60 ตัวอักษร) | ![register](screenshots/week3/01_register_form.png) ![registered](screenshots/week3/02_registered_then_login_page.png) |
+| 2. รหัสผ่านผิดล็อกอินไม่ได้ / รหัสถูกล็อกอินได้ | ผิดได้ข้อความ error, ถูก redirect ไป `skills.php` และรหัส session เปลี่ยน | ![failed](screenshots/week3/03_login_failed.png) ![success](screenshots/week3/04_login_success_skills_page.png) |
+| 3. ล็อกเอาต์แล้วเข้าหน้าส่วนตัวไม่ได้ แม้ใช้ cookie เก่า | cookie เก่าถูก redirect ไป `login.php` | ![confirm](screenshots/week3/07_logout_confirm.png) ![after](screenshots/week3/08_after_logout_login_page.png) |
+| 4. ผู้ใช้สองคนไม่เห็น/แก้/ลบข้อมูลของกัน | B เห็นตารางว่าง, เปิดหน้าแก้ของ A ได้ 404, สั่งลบ skill ของ A แล้วแถวยังอยู่ | ![B](screenshots/week3/06_user_B_sees_nothing_of_A.png) |
+| 5. สร้าง แก้ ลบ หลังล็อกอิน | ทำงานถูกต้องทั้งสามขั้น | ![create](screenshots/week3/05_crud_after_create.png) ![delete](screenshots/week3/11_crud_after_delete.png) |
+| 5. หน้าเรซูเม่ของผู้ใช้ใหม่ | แสดงเฉพาะข้อมูลของตัวเอง ไม่มี PHP error | ![resume](screenshots/week3/10_resume_page_of_user_A.png) |
+| 6. ใส่ SQL injection ในช่องอีเมล/รหัสผ่าน | ล็อกอินไม่ผ่าน ไม่มี error | (อยู่ในผลสคริปต์) |
+| 7. repo ไม่มีรหัสผ่านจริงหรือ `.env` | ไม่มี (`.gitignore` กัน `.env` และ `secret/`) | |
+
+เพิ่มเติม: ส่งฟอร์มล็อกอิน/ล็อกเอาต์โดยไม่มี CSRF token ได้ 403
+
+## ข้อจำกัดที่ทราบ
+
+- ยังไม่มีการจำกัดจำนวนครั้งที่ล็อกอินผิด (throttling), session timeout, การบังคับ HTTPS หรือการยืนยันอีเมล ตามที่ README ระบุว่าระบบจริงต้องมีเพิ่ม
+- หน้าสมัครสมาชิกเปิดให้ใครก็สมัครได้ ถ้านำขึ้นเว็บสาธารณะ ควรปิดหรือจำกัดหลังสาธิตเสร็จ
