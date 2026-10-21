@@ -1,14 +1,16 @@
 <?php
+require_once 'auth.php';
+require_login();
 require_once 'config/db.php';
+$pid = (int)$_SESSION['profile_id'];
 
 // ---------- Profile (starter table) ----------
 $profile = null;
-$sql = "SELECT * FROM profile ORDER BY id LIMIT 1";
+$sql = "SELECT * FROM profile WHERE id = $pid LIMIT 1";
 $result = mysqli_query($conn, $sql);
 if ($result && mysqli_num_rows($result) > 0) {
     $profile = mysqli_fetch_assoc($result);
 }
-$pid = $profile ? (int)$profile['id'] : 0;
 
 // ---------- Education (starter table) ----------
 $educations = [];
@@ -73,9 +75,9 @@ $level_percent = [
 </head>
 <body>
 <div class="container">
-    <p class="manage"><a href="skills.php">Manage Skills (CRUD Lab) &rarr;</a></p>
+    <p class="manage"><a href="skills.php">Manage Skills (CRUD Lab) &rarr;</a> <a href="logout.php">Logout</a></p>
     <header class="hero card">
-        <img class="avatar" src="assets/images/<?php echo $profile ? htmlspecialchars($profile['photo']) : 'student.jpg'; ?>" alt="Profile Photo">
+        <img class="avatar" src="assets/images/<?php echo ($profile && !empty($profile['photo'])) ? htmlspecialchars($profile['photo']) : 'student.jpg'; ?>" alt="Profile Photo">
         <div class="hero-text">
             <h1><?php echo $profile ? htmlspecialchars($profile['full_name']) : 'Your Name'; ?></h1>
             <p class="headline"><?php echo $profile ? htmlspecialchars($profile['headline']) : 'Student Resume Website'; ?></p>
@@ -97,7 +99,7 @@ $level_percent = [
 
     <section class="card">
         <h2>About Me</h2>
-        <p><?php echo $profile ? nl2br(htmlspecialchars($profile['about_me'])) : 'Add your profile data in phpMyAdmin.'; ?></p>
+        <p><?php echo $profile ? nl2br(htmlspecialchars((string)$profile['about_me'])) : 'Add your profile data in phpMyAdmin.'; ?></p>
     </section>
 
     <section class="card">
